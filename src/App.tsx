@@ -3,6 +3,7 @@ import { Star, ChevronRight, Play, CheckCircle2 } from 'lucide-react';
 import { INITIAL_WORKS } from './data/initialWorks';
 import { assetUrl, safeHref, parseAndValidateVideoUrl, PLATFORM_LABEL } from './lib/media';
 import VideoEmbed, { hasPlayableVideo } from './components/VideoEmbed';
+import ImageLightbox from './components/ImageLightbox';
 import { GAS_READY, CONFIG_GA4_ID } from './lib/config';
 import { callApi, fetchPublicData, readCachedPublic } from './lib/api';
 import { captureUtm, getAttribution, initGA4, track, trackPageView } from './lib/analytics';
@@ -12,7 +13,7 @@ import AdminPortal from './admin/AdminPortal';
 // ==========================================
 // 通用元件：安全社群影片與多圖預覽嵌入元件 (階段四)
 // ==========================================
-const SafeMediaDisplay = ({ work, onOpenDetail, onPlayGame }) => {
+const SafeMediaDisplay = ({ work, onOpenDetail, onPlayGame, onZoom }) => {
   const [imgSrc, setImgSrc] = useState(assetUrl(work.cover_image));
   const playable = useMemo(() => hasPlayableVideo(work.video_url), [work.video_url]);
 
@@ -35,7 +36,14 @@ const SafeMediaDisplay = ({ work, onOpenDetail, onPlayGame }) => {
         {playable ? (
           <VideoEmbed work={work} mode="card" />
         ) : (
-          <div className="relative w-full h-[260px] sm:h-[320px] overflow-hidden cursor-pointer" onClick={() => onOpenDetail(work)}>
+          <div
+            className="relative w-full h-[260px] sm:h-[320px] overflow-hidden cursor-zoom-in"
+            onClick={() => onZoom(work)}
+            role="button"
+            tabIndex={0}
+            aria-label={`放大檢視 ${work.title}`}
+            onKeyDown={(e) => { if (e.key === 'Enter') onZoom(work); }}
+          >
             <img
               src={imgSrc}
               alt={work.title}
@@ -51,6 +59,7 @@ const SafeMediaDisplay = ({ work, onOpenDetail, onPlayGame }) => {
               className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1c1813] via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+            <span className="pointer-events-none absolute bottom-3 right-3 px-2.5 py-1 bg-black/70 border border-[#B89A70]/50 text-[#E9DDCC] text-[11px] rounded-sm">🔍 點圖放大</span>
           </div>
         )}
       </div>
@@ -141,6 +150,14 @@ export default function App() {
   const [dataSource, setDataSource] = useState(GAS_READY ? 'loading' : 'builtin');
   const [selectedCategory, setSelectedCategory] = useState('全部');
   const [activeWorkDetail, setActiveWorkDetail] = useState(null);
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number; title: string } | null>(null);
+  // 作品的所有圖片（封面 + 細節圖，去除重複）
+  const workImages = (w) => Array.from(new Set([w.cover_image, ...(Array.isArray(w.gallery_images) ? w.gallery_images : [])].filter(Boolean)));
+  const openLightbox = (w, img) => {
+    const images = workImages(w);
+    setLightbox({ images, index: Math.max(0, images.indexOf(img)), title: w.title });
+    track('view_image', { item_id: w.id, item_name: w.title });
+  };
   const [playingGame, setPlayingGame] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -400,7 +417,7 @@ export default function App() {
           <header id="home" className="relative min-h-[78vh] md:min-h-[88vh] py-16 flex items-center justify-center bg-[#29251F] overflow-hidden">
             <div className="absolute inset-0 z-0 opacity-20">
               <img
-                src={assetUrl('images/優雅金韻品牌識別展板.png')}
+                src={assetUrl('images/brand-board.jpg')}
                 alt="Grace Creative Background"
                 onError={(e) => {
                   e.currentTarget.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1920&q=80';
@@ -644,7 +661,7 @@ export default function App() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
                 {filteredPublicWorks.map((work) => (
-                  <SafeMediaDisplay key={work.id} work={work} onOpenDetail={openWorkDetail} onPlayGame={openGame} />
+                  <SafeMediaDisplay key={work.id} work={work} onOpenDetail={openWorkDetail} onPlayGame={openGame} onZoom={(w) => openLightbox(w, w.cover_image)} />
                 ))}
               </div>
             </div>
@@ -877,14 +894,24 @@ export default function App() {
                 {hasPlayableVideo(activeWorkDetail.video_url) ? (
                   <VideoEmbed work={activeWorkDetail} mode="detail" autoPlay />
                 ) : (
-                <img
-                  src={assetUrl(activeWorkDetail.cover_image)}
-                  alt={activeWorkDetail.title}
-                  onError={(e) => {
-                    e.currentTarget.src = activeWorkDetail.fallback_cover || 'https://placehold.co/1200x800/29251F/B89A70?text=GRACE+CREATIVE';
-                  }}
-                  className="w-full max-h-[520px] object-contain mx-auto"
-                />
+                <button
+                  type="button"
+                  onClick={() => openLightbox(activeWorkDetail, activeWorkDetail.cover_image)}
+                  className="relative block w-full cursor-zoom-in group/zoom"
+                  aria-label="放大檢視圖片"
+                >
+                  <img
+                    src={assetUrl(activeWorkDetail.cover_image)}
+                    alt={activeWorkDetail.title}
+                    onError={(e) => {
+                      e.currentTarget.src = activeWorkDetail.fallback_cover || 'https://placehold.co/1200x800/29251F/B89A70?text=GRACE+CREATIVE';
+                    }}
+                    className="w-full max-h-[520px] object-contain mx-auto"
+                  />
+                  <span className="absolute bottom-3 right-3 px-3 py-1.5 bg-black/70 border border-[#B89A70]/60 text-[#E9DDCC] text-xs rounded-sm opacity-90 group-hover/zoom:bg-[#B89A70] group-hover/zoom:text-[#29251F] transition-colors">
+                    🔍 點圖放大
+                  </span>
+                </button>
                 )}
               </div>
 
@@ -894,13 +921,20 @@ export default function App() {
                   <h4 className="text-xs tracking-widest uppercase text-[#B89A70] mb-3">更多作品細節圖 ({activeWorkDetail.gallery_images.length} 張)</h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                     {activeWorkDetail.gallery_images.map((imgUrl: string, i: number) => (
-                      <img
-                        loading="lazy"
+                      <button
+                        type="button"
                         key={i}
-                        src={assetUrl(imgUrl)}
-                        alt={`${activeWorkDetail.title} - ${i + 1}`}
-                        className="w-full h-40 object-cover rounded-sm border border-[#B89A70]/20"
-                      />
+                        onClick={() => openLightbox(activeWorkDetail, imgUrl)}
+                        className="cursor-zoom-in"
+                        aria-label={`放大第 ${i + 1} 張`}
+                      >
+                        <img
+                          loading="lazy"
+                          src={assetUrl(imgUrl)}
+                          alt={`${activeWorkDetail.title} - ${i + 1}`}
+                          className="w-full h-40 object-cover rounded-sm border border-[#B89A70]/20 hover:border-[#B89A70] transition-colors"
+                        />
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -951,6 +985,11 @@ export default function App() {
         </div>
       )}
 
+
+      {/* 圖片放大檢視 */}
+      {lightbox && (
+        <ImageLightbox images={lightbox.images} startIndex={lightbox.index} title={lightbox.title} onClose={() => setLightbox(null)} />
+      )}
 
       {/* 遊戲試玩視窗：直接在網頁內玩 */}
       {playingGame && (
