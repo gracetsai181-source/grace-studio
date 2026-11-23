@@ -2,7 +2,7 @@
 // 影片直接嵌入元件：作品卡片、作品詳情、後台預覽共用
 // 依平台與比例（直式 / 橫式 / 方形）自動調整播放器大小
 // ==========================================
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { parseAndValidateVideoUrl, resolveRatio, assetUrl } from '../lib/media';
 import { track } from '../lib/analytics';
 
@@ -49,9 +49,18 @@ export function hasPlayableVideo(url: string) {
 
 export default function VideoEmbed({ work, mode = 'card', autoPlay = false }: { work: any; mode?: Mode; autoPlay?: boolean }) {
   const info = useMemo(() => parseAndValidateVideoUrl(work?.video_url || ''), [work?.video_url]);
+  // 影片檔：讀到影片實際尺寸後自動判斷直式 / 橫式 / 方形
+  const [detected, setDetected] = useState<string | null>(null);
   if (!info.isValid || info.kind === 'none') return null;
 
-  const ratio = resolveRatio(work, info);
+  const manual = work?.video_ratio && work.video_ratio !== 'auto';
+  const ratio = manual ? work.video_ratio : detected || resolveRatio(work, info);
+  const onMeta = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const v = e.currentTarget;
+    if (!v.videoWidth || !v.videoHeight) return;
+    const r = v.videoWidth / v.videoHeight;
+    setDetected(r > 1.15 ? 'landscape' : r < 0.87 ? 'portrait' : 'square');
+  };
   const isFbPost = info.platform === 'facebook' && info.embedUrl.includes('/post.php');
   const boxKey =
     info.platform === 'instagram' ? 'instagram'
@@ -74,6 +83,7 @@ export default function VideoEmbed({ work, mode = 'card', autoPlay = false }: { 
             controlsList="nodownload"
             title={work.title}
             onPlay={() => track('video_start', { video_title: work.title, video_provider: 'file', item_id: work.id })}
+            onLoadedMetadata={onMeta}
             className="w-full h-full object-contain bg-black"
           />
         </div>
