@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿怪 × 猴丸子 表情翻牌</title>
+<link rel="icon" type="image/png" href="../../logo.png">
+<style>
+  :root {
+    --bg: #29251F;
+    --panel: #1c1813;
+    --gold: #B89A70;
+    --gold-hi: #d1b894;
+    --silk: #E9DDCC;
+    --paper: #fbf7f0;
+    --ok: #7fb685;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--silk); }
+  body {
+    min-height: 100vh;
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px max(16px, env(safe-area-inset-left, 0px)) 32px;
+  }
+  .wrap { width: 100%; max-width: 560px; }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .back { color: var(--gold); font-size: 13px; letter-spacing: .12em; text-decoration: none; border: 1px solid rgba(184,154,112,.4); padding: 7px 12px; border-radius: 2px; }
+  .back:hover, .back:focus-visible { border-color: var(--gold); color: var(--gold-hi); outline: none; }
+  h1 { font-family: Georgia, "Noto Serif TC", serif; font-weight: 400; font-size: clamp(22px, 5vw, 30px); letter-spacing: .06em; margin: 0 0 4px; color: #fff; }
+  .sub { margin: 0 0 18px; font-size: 14px; color: rgba(233,221,204,.75); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .stat { background: var(--panel); border: 1px solid rgba(184,154,112,.2); padding: 10px 12px; border-radius: 2px; }
+  .stat b { display: block; font-size: 11px; font-weight: 500; letter-spacing: .14em; color: var(--gold); margin-bottom: 2px; }
+  .stat span { font-size: 22px; font-variant-numeric: tabular-nums; color: #fff; }
+  .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; perspective: 900px; }
+  .card { position: relative; aspect-ratio: 6 / 7; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; }
+  .card:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 3px; border-radius: 4px; }
+  .inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .45s cubic-bezier(.3,.7,.2,1); }
+  .card.open .inner, .card.done .inner { transform: rotateY(180deg); }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 4px; overflow: hidden; }
+  .back-face {
+    display: grid; place-items: center;
+    background: radial-gradient(circle at 30% 20%, #3a342b, #1c1813 70%);
+    border: 1px solid rgba(184,154,112,.45);
+  }
+  .back-face i { font-family: Georgia, "Noto Serif TC", serif; font-style: normal; font-size: clamp(34px, 9vw, 54px); color: var(--gold); }
+  .back-face::after { content: "✦"; position: absolute; right: 22%; top: 22%; font-size: 12px; color: var(--gold-hi); }
+  .front-face { transform: rotateY(180deg); background: var(--paper); border: 2px solid var(--gold); display: flex; flex-direction: column; }
+  .front-face img { width: 100%; flex: 1; min-height: 0; object-fit: cover; display: block; }
+  .card.done .front-face { border-color: var(--ok); box-shadow: 0 0 0 2px rgba(127,182,133,.35); }
+  .card.done { cursor: default; }
+  .bar { display: flex; gap: 10px; margin-top: 18px; }
+  button.btn { flex: 1; font: inherit; font-size: 14px; letter-spacing: .14em; padding: 12px; background: var(--gold); color: var(--bg); border: 0; border-radius: 2px; cursor: pointer; font-weight: 600; }
+  button.btn:hover, button.btn:focus-visible { background: var(--gold-hi); outline: none; }
+  .tip { margin-top: 14px; font-size: 12.5px; color: rgba(233,221,204,.6); text-align: center; }
+  .overlay { position: fixed; inset: 0; background: rgba(20,17,14,.88); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+  .overlay.show { display: flex; }
+  .modal { background: var(--panel); border: 1px solid rgba(184,154,112,.5); border-radius: 4px; padding: 28px 24px; max-width: 380px; width: 100%; text-align: center; }
+  .modal h2 { font-family: Georgia, "Noto Serif TC", serif; font-weight: 400; margin: 0 0 8px; font-size: 28px; color: #fff; }
+  .modal p { margin: 4px 0; color: var(--silk); }
+  .modal .big { font-size: 15px; margin-bottom: 14px; }
+  .modal .row { display: flex; gap: 10px; margin-top: 18px; }
+  .modal a.btn2 { flex: 1; display: block; text-decoration: none; text-align: center; font-size: 14px; letter-spacing: .12em; padding: 12px; border: 1px solid rgba(184,154,112,.5); color: var(--silk); border-radius: 2px; }
+  .newbest { color: var(--ok); font-size: 14px; min-height: 20px; }
+  @media (prefers-reduced-motion: reduce) { .inner { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="../../index.html">← 回到首頁</a>
+  </div>
+  <h1>阿怪 × 猴丸子 表情翻牌</h1>
+  <p class="sub">翻開兩張相同的表情貼圖就能配對，用最少步數全部配完。</p>
+
+  <div class="stats" aria-live="polite">
+    <div class="stat"><b>步數</b><span id="moves">0</span></div>
+    <div class="stat"><b>時間</b><span id="time">0:00</span></div>
+    <div class="stat"><b>最佳步數</b><span id="best">–</span></div>
+  </div>
+
+  <div class="board" id="board" role="group" aria-label="翻牌遊戲牌桌"></div>
+
+  <div class="bar"><button class="btn" id="restart" type="button">重新洗牌</button></div>
+  <p class="tip">阿怪 4 款表情，猴丸子 4 款表情，共 8 對。</p>
+</div>
+
+<div class="overlay" id="win" role="dialog" aria-modal="true" aria-labelledby="win-title">
+  <div class="modal">
+    <h2 id="win-title">全部配對成功！</h2>
+    <p class="big" id="win-text"></p>
+    <p class="newbest" id="newbest"></p>
+    <div class="row">
+      <button class="btn" id="again" type="button">再玩一次</button>
+      <a class="btn2" href="../../index.html">回到首頁</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var CARDS = [
+    { id: 'ag-ignore', name: '阿怪：不想理你' },
+    { id: 'ag-food',   name: '阿怪：先吃再說' },
+    { id: 'ag-tired',  name: '阿怪：好累' },
+    { id: 'ag-haha',   name: '阿怪：哈哈哈' },
+    { id: 'hw-happy',  name: '猴丸子：開心' },
+    { id: 'hw-rice',   name: '猴丸子：吃飯' },
+    { id: 'hw-spa',    name: '猴丸子：泡溫泉' },
+    { id: 'hw-sleep',  name: '猴丸子：睡覺' }
+  ];
+  var board = document.getElementById('board');
+  var movesEl = document.getElementById('moves');
+  var timeEl = document.getElementById('time');
+  var bestEl = document.getElementById('best');
+  var win = document.getElementById('win');
+  var BEST_KEY = 'grace-memory-best';
+
+  var first = null, lock = false, moves = 0, matched = 0, started = false, t0 = 0, timer = null;
+
+  function readBest() { try { var v = localStorage.getItem(BEST_KEY); return v ? parseInt(v, 10) : null; } catch (e) { return null; } }
+  function writeBest(v) { try { localStorage.setItem(BEST_KEY, String(v)); } catch (e) {} }
+  function showBest() { var b = readBest(); bestEl.textContent = b ? b : '–'; }
+  function fmt(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+  function startTimer() {
+    t0 = Date.now(); started = true;
+    timer = setInterval(function () { timeEl.textContent = fmt(Math.floor((Date.now() - t0) / 1000)); }, 250);
+  }
+
+  function build() {
+    stopTimer();
+    first = null; lock = false; moves = 0; matched = 0; started = false;
+    movesEl.textContent = '0'; timeEl.textContent = '0:00'; showBest();
+    win.classList.remove('show');
+    board.innerHTML = '';
+    var deck = shuffle(CARDS.concat(CARDS));
+    deck.forEach(function (c, i) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'card'; b.dataset.id = c.id;
+      b.setAttribute('aria-label', '第 ' + (i + 1) + ' 張牌，尚未翻開');
+      b.innerHTML =
+        '<div class="inner">' +
+          '<div class="face back-face"><i>G</i></div>' +
+          '<div class="face front-face"><img src="cards/' + c.id + '.jpg" alt="' + c.name + '" draggable="false"></div>' +
+        '</div>';
+      b.addEventListener('click', function () { flip(b, c, i); });
+      board.appendChild(b);
+    });
+  }
+
+  function flip(el, c, i) {
+    if (lock || el.classList.contains('open') || el.classList.contains('done')) return;
+    if (!started) startTimer();
+    el.classList.add('open');
+    el.setAttribute('aria-label', c.name);
+    if (!first) { first = el; return; }
+    moves++; movesEl.textContent = moves;
+    var a = first, b = el; first = null;
+    if (a.dataset.id === b.dataset.id) {
+      a.classList.remove('open'); b.classList.remove('open');
+      a.classList.add('done'); b.classList.add('done');
+      matched++;
+      if (matched === CARDS.length) setTimeout(finish, 600);
+    } else {
+      lock = true;
+      setTimeout(function () {
+        a.classList.remove('open'); b.classList.remove('open');
+        a.setAttribute('aria-label', '尚未翻開'); b.setAttribute('aria-label', '尚未翻開');
+        lock = false;
+      }, 850);
+    }
+  }
+
+  function finish() {
+    stopTimer();
+    var secs = Math.floor((Date.now() - t0) / 1000);
+    document.getElementById('win-text').textContent = '共 ' + moves + ' 步，用時 ' + fmt(secs);
+    var best = readBest(), nb = document.getElementById('newbest');
+    if (!best || moves < best) { writeBest(moves); nb.textContent = best ? '新的最佳步數！' : '已記錄你的最佳步數'; }
+    else { nb.textContent = '最佳紀錄：' + best + ' 步'; }
+    showBest();
+    win.classList.add('show');
+    document.getElementById('again').focus();
+  }
+
+  document.getElementById('restart').addEventListener('click', build);
+  document.getElementById('again').addEventListener('click', build);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') win.classList.remove('show'); });
+  try {
+    if (window.self !== window.top) {
+      document.querySelectorAll('.back, .btn2').forEach(function (el) { el.style.display = 'none'; });
+    }
+  } catch (e) {
+    document.querySelectorAll('.back, .btn2').forEach(function (el) { el.style.display = 'none'; });
+  }
+  build();
+})();
+</script>
+</body>
+</html>

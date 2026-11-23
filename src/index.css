@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: #29251F; overscroll-behavior-y: none; }
+/* 錨點跳轉時避開固定的導覽列 */
+section[id], header[id] { scroll-margin-top: 4.5rem; }
+/* 手機按鈕點擊不要出現藍色框 */
+button, a { -webkit-tap-highlight-color: transparent; }
+/* 後台分頁列：可左右滑動但隱藏捲軸 */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+/* iOS 輸入框字小於 16px 會自動放大畫面，手機上統一 16px */
+@media (max-width: 640px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ===== iPhone 瀏海 / 底部橫條安全區域（PWA 全螢幕時使用） ===== */
+.safe-pt-1 { padding-top: calc(1rem + env(safe-area-inset-top)); }
+.safe-pb-admin { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
+.safe-pb-footer { padding-bottom: calc(3rem + env(safe-area-inset-bottom)); }
+.safe-pt-modal { padding-top: calc(1rem + env(safe-area-inset-top)); }
+.safe-pb-modal { padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)); }
+.safe-pt-game { padding-top: calc(0.5rem + env(safe-area-inset-top)); }
+.fab-safe { bottom: calc(1rem + env(safe-area-inset-bottom)); }
+.banner-safe { top: calc(0.75rem + env(safe-area-inset-top)); }
+.toast-safe { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+.mb-safe { margin-bottom: env(safe-area-inset-bottom); }
+@media (min-width: 640px) {
+  .safe-pt-modal { padding-top: 1.5rem; }
+  .fab-safe { bottom: 1.5rem; }
+  .toast-safe { bottom: 1.5rem; }
+}
