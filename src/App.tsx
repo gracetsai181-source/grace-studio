@@ -4,11 +4,20 @@ import { INITIAL_WORKS } from './data/initialWorks';
 import { assetUrl, safeHref, parseAndValidateVideoUrl, PLATFORM_LABEL } from './lib/media';
 import VideoEmbed, { hasPlayableVideo } from './components/VideoEmbed';
 import ImageLightbox from './components/ImageLightbox';
-import { GAS_READY, CONFIG_GA4_ID } from './lib/config';
+import { GAS_READY, CONFIG_GA4_ID, LINE_URL, CODER_LINK } from './lib/config';
 import { callApi, fetchPublicData, readCachedPublic } from './lib/api';
 import { captureUtm, getAttribution, initGA4, track, trackPageView } from './lib/analytics';
 import { useUpdateAvailable, useInstallPrompt, applyUpdate } from './lib/pwa';
 import AdminPortal from './admin/AdminPortal';
+
+// LINE 圖示
+const LineIcon = ({ className = 'w-5 h-5' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 2.5C6.48 2.5 2 6.13 2 10.6c0 4.01 3.55 7.37 8.35 8.01.33.07.77.22.88.5.1.25.07.65.03.9l-.14.86c-.04.25-.2.99.87.54 1.07-.45 5.76-3.39 7.86-5.81C21.29 14.07 22 12.42 22 10.6 22 6.13 17.52 2.5 12 2.5zM8.4 13.02H6.42a.53.53 0 01-.53-.53V8.53c0-.29.24-.53.53-.53.29 0 .53.24.53.53v3.43H8.4c.29 0 .53.24.53.53 0 .29-.24.53-.53.53zm2.05-.53c0 .29-.24.53-.53.53a.53.53 0 01-.53-.53V8.53c0-.29.24-.53.53-.53.29 0 .53.24.53.53v3.96zm4.78 0c0 .23-.15.43-.36.5a.52.52 0 01-.59-.19l-2.03-2.76v2.45c0 .29-.24.53-.53.53a.53.53 0 01-.53-.53V8.53c0-.23.15-.43.36-.5.05-.02.11-.03.17-.03.16 0 .32.09.42.21l2.04 2.77V8.53c0-.29.24-.53.53-.53.29 0 .53.24.53.53v3.96zm3.2-2.5c.29 0 .53.24.53.53 0 .29-.24.53-.53.53h-1.46v.94h1.46c.29 0 .53.24.53.53 0 .29-.24.53-.53.53h-1.99a.53.53 0 01-.53-.53V8.53c0-.29.24-.53.53-.53h1.99c.29 0 .53.24.53.53 0 .29-.24.53-.53.53h-1.46v.94h1.46z" />
+  </svg>
+);
+const trackLine = (place: string) => track('click_line', { link_url: LINE_URL, placement: place });
+const trackCoder = (place: string) => track('click_outbound', { link_url: CODER_LINK, link_text: 'Coder 官網', placement: place });
 
 // ==========================================
 // 通用元件：安全社群影片與多圖預覽嵌入元件 (階段四)
@@ -351,7 +360,7 @@ export default function App() {
               </a>
 
               {/* Desktop Menu */}
-              <div className="hidden md:flex items-center space-x-10 text-sm font-medium tracking-wider text-[#E9DDCC]">
+              <div className="hidden md:flex items-center gap-5 lg:gap-8 text-sm font-medium tracking-wider text-[#E9DDCC]">
                 <a href="#home" className="hover:text-[#B89A70] transition-colors duration-300 relative group">
                   關於我們
                   <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#B89A70] transition-all duration-300 group-hover:w-full"></span>
@@ -371,6 +380,18 @@ export default function App() {
                 <a href="#contact" className="hover:text-[#B89A70] transition-colors duration-300 relative group">
                   聯絡我們
                   <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#B89A70] transition-all duration-300 group-hover:w-full"></span>
+                </a>
+                <a href={CODER_LINK} target="_blank" rel="noopener" onClick={() => trackCoder('nav')} className="hover:text-[#B89A70] transition-colors duration-300 whitespace-nowrap">
+                  Coder 官網 ↗
+                </a>
+                <a
+                  href={LINE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackLine('nav')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#06C755] hover:bg-[#05b34c] text-white rounded-sm text-xs tracking-wider transition-colors whitespace-nowrap"
+                >
+                  <LineIcon className="w-4 h-4" /> 加入 LINE
                 </a>
                 {(canInstall || showIOSHint) && (
                   <button
@@ -404,6 +425,11 @@ export default function App() {
                 <a href="#services" onClick={() => setMobileMenuOpen(false)} className="text-[#E9DDCC] hover:text-[#B89A70]">服務項目</a>
                 <a href="#portfolio" onClick={() => setMobileMenuOpen(false)} className="text-[#E9DDCC] hover:text-[#B89A70]">作品集</a>
                 <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="text-[#E9DDCC] hover:text-[#B89A70]">聯絡我們</a>
+                <a href={CODER_LINK} target="_blank" rel="noopener" onClick={() => { setMobileMenuOpen(false); trackCoder('mobile_menu'); }} className="text-[#E9DDCC] hover:text-[#B89A70]">Coder 官網 ↗</a>
+                <a href={LINE_URL} target="_blank" rel="noopener noreferrer" onClick={() => { setMobileMenuOpen(false); trackLine('mobile_menu'); }}
+                  className="inline-flex items-center gap-2 px-5 py-2 bg-[#06C755] text-white rounded-sm text-sm tracking-wider">
+                  <LineIcon className="w-5 h-5" /> 加入 LINE 官方帳號
+                </a>
                 {(canInstall || showIOSHint) && (
                   <button type="button" onClick={() => { setMobileMenuOpen(false); handleInstall(); }} className="px-5 py-2 border border-[#B89A70] text-[#B89A70] rounded-sm text-sm tracking-widest">
                     安裝到手機主畫面
@@ -664,6 +690,24 @@ export default function App() {
                   <SafeMediaDisplay key={work.id} work={work} onOpenDetail={openWorkDetail} onPlayGame={openGame} onZoom={(w) => openLightbox(w, w.cover_image)} />
                 ))}
               </div>
+
+              {/* Coder 姊妹站推薦 */}
+              <a
+                href={CODER_LINK}
+                target="_blank"
+                rel="noopener"
+                onClick={() => trackCoder('portfolio_banner')}
+                className="mt-10 sm:mt-14 group/coder flex flex-col sm:flex-row items-center justify-between gap-4 p-6 sm:p-8 bg-gradient-to-r from-[#1c1813] to-[#14110e] border border-[#B89A70]/30 hover:border-[#B89A70] rounded-sm transition-colors text-center sm:text-left"
+              >
+                <div>
+                  <span className="text-[11px] tracking-[0.3em] text-[#B89A70]">MORE WORKS</span>
+                  <p className="text-white text-lg sm:text-xl mt-1">Coder 之影音沉浸世界</p>
+                  <p className="text-[#E9DDCC]/70 text-sm mt-1">更多動畫、音樂 MV、前端小遊戲與 VR 作品，都在 Coder 官網</p>
+                </div>
+                <span className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 border border-[#B89A70] text-[#B89A70] group-hover/coder:bg-[#B89A70] group-hover/coder:text-[#29251F] text-sm tracking-widest rounded-sm transition-colors">
+                  前往 Coder 官網 ↗
+                </span>
+              </a>
             </div>
           </section>
 
@@ -680,9 +724,37 @@ export default function App() {
                 <h2 className="font-serif-grace text-4xl md:text-5xl text-white mb-6">Let's Create Together.</h2>
 
                 <p className="text-[#E9DDCC] text-lg md:text-xl font-light max-w-2xl mx-auto leading-relaxed">
-                  專為中小企業、品牌商家、內容創作者打造的頂尖視覺升級方案。填寫下方表單，您的需求將即時同步至專案管理雲端試算表。
+                  專為中小企業、品牌商家、內容創作者打造的頂尖視覺升級方案。加入 LINE 直接聊，或填寫下方表單，我們會盡快與您聯繫。
                 </p>
               </div>
+
+              {/* LINE 官方帳號 */}
+              <div className="mb-6 sm:mb-8 bg-[#29251F] border border-[#06C755]/40 rounded-sm p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-5 sm:gap-8">
+                <a href={LINE_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackLine('contact_qr')} className="hidden sm:block shrink-0 bg-white p-2 rounded-sm" aria-label="LINE 官方帳號 QR Code">
+                  <img src={assetUrl('images/line-qr.png')} alt="LINE 官方帳號 QR Code" width={120} height={120} className="w-[120px] h-[120px]" loading="lazy" />
+                </a>
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="text-white text-lg font-medium flex items-center justify-center sm:justify-start gap-2">
+                    <LineIcon className="w-6 h-6 text-[#06C755]" /> 想快速聊聊？加 LINE 直接問
+                  </p>
+                  <p className="text-[#E9DDCC]/70 text-sm mt-1.5 leading-relaxed">
+                    <span className="hidden sm:inline">用手機掃描 QR Code，或點下方按鈕</span>
+                    <span className="sm:hidden">點下方按鈕</span>
+                    加入官方帳號好友，報價、檔期都可以直接詢問。
+                  </p>
+                  <a
+                    href={LINE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackLine('contact_button')}
+                    className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-[#06C755] hover:bg-[#05b34c] text-white text-sm font-medium tracking-wider rounded-sm transition-colors"
+                  >
+                    <LineIcon className="w-5 h-5" /> 加入 LINE 好友
+                  </a>
+                </div>
+              </div>
+
+              <p className="text-center text-xs text-[#E9DDCC]/50 mb-4 tracking-widest">— 或填寫專案諮詢表單 —</p>
 
               <div className="bg-[#29251F] border border-[#B89A70]/25 rounded-sm p-5 sm:p-8 md:p-10 shadow-2xl">
                 {contactSubmitted ? (
@@ -833,6 +905,14 @@ export default function App() {
                   GRACE<span className="text-[#B89A70]">.</span>
                 </a>
                 <p className="text-[#E9DDCC]/50 text-xs mt-2 font-light">絹・創意工作室 | AI 視覺敘事</p>
+                <div className="flex items-center justify-center md:justify-start gap-4 mt-4 text-xs">
+                  <a href={LINE_URL} target="_blank" rel="noopener noreferrer" onClick={() => trackLine('footer')} className="inline-flex items-center gap-1.5 text-[#06C755] hover:text-[#2fe07a]">
+                    <LineIcon className="w-4 h-4" /> LINE 官方帳號
+                  </a>
+                  <a href={CODER_LINK} target="_blank" rel="noopener" onClick={() => trackCoder('footer')} className="text-[#B89A70] hover:text-[#E9DDCC]">
+                    Coder 官網 ↗
+                  </a>
+                </div>
               </div>
 
               <div className="flex flex-col md:flex-row items-center gap-4 text-[#E9DDCC]/50 text-xs font-light tracking-wide">
@@ -1022,6 +1102,20 @@ export default function App() {
             className="flex-1 w-full border-0 bg-[#1c1813]"
           />
         </div>
+      )}
+
+      {/* 手機版浮動 LINE 按鈕 */}
+      {currentPath !== '/admin' && (
+        <a
+          href={LINE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => trackLine('floating')}
+          aria-label="加入 LINE 官方帳號"
+          className="md:hidden fixed left-4 fab-safe z-40 w-12 h-12 rounded-full bg-[#06C755] text-white shadow-2xl flex items-center justify-center"
+        >
+          <LineIcon className="w-7 h-7" />
+        </a>
       )}
 
       {/* 回到首頁浮動按鈕 */}
